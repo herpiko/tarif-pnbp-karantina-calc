@@ -1,0 +1,16 @@
+{
+  "name": "mongodbrest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "server":"./node_modules/.bin/http-server -p 7654 && node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "herpiko dwi aguno <herpiko@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^0.8.5",
+    "mongodb-rest": "^0.10.14"
+  }
+}
