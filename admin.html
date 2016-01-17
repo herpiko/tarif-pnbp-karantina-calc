@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html ng-app>
+<head>
+<script src="assets/js/async.js"></script>
+<script src="assets/js/angular.min.js"></script>
+<link href="assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<meta charset=utf-8 />
+<title>Tarif Jasa PNBP</title>
+<style>
+.well-child {
+  padding:2px !important;
+  margin-bottom:0px;
+  margin-top:5px;
+  margin-left:35px;
+  border-right:none;
+  border-bottom:none;
+}
+.price {
+  padding-right:10px;
+}
+.child-btn {
+  display:inline-block;
+}
+.expand-btn {
+  border-radius:15px;
+  display:inline-block;
+  text-align:center;
+  width:30px;
+  height:30px;
+  padding:0px;
+}
+</style>
+<script>
+function ctrl($scope, $http, $timeout){
+  var ID = "569b94a8412bd1480dae8936";
+  $scope.button=true;
+  $scope.get = function(id) {
+    $http.get("http://128.199.95.141:29017/karantina/data/" + id)
+    .success(function(data){
+        delete(data._id);
+        $scope.data = data;
+      })
+      .error(function(data){
+        console.log(data);
+      })
+  }
+  $scope.get(ID);
+  $scope.put = function(id, data) {
+    $http.put("http://128.199.95.141:29017/karantina/data/" + id, data)
+    .success(function(data){
+        console.log(data);
+        $scope.get(ID);
+      })
+      .error(function(data){
+        console.log(data);
+      })
+  }
+  $scope.addChild = function(l, n) {
+    l.add = false;
+    if (!l.childs) {
+      l.childs = [];
+    }
+    var id = new Date();
+    n.id = id.valueOf();
+    l.childs.push(n);
+    var iterate = function(childs) {
+      for (var i in childs) {
+        delete(childs[i].add);
+        delete(childs[i].edit);
+        if (childs[i] && childs[i].childs) {
+          iterate(childs[i].childs);
+        }
+      }
+    }
+    iterate($scope.data.childs);
+    $timeout(function(){
+      $scope.put(ID, $scope.data);
+    }, 100);
+  }
+  $scope.removeSelf = function(current){
+    var iterate = function(childs) {
+      for (var i in childs) {
+        delete(childs[i].add);
+        delete(childs[i].edit);
+        if (childs[i].id == current.id) {
+          childs.splice(i,1);
+        }
+        if (childs[i] && childs[i].childs) {
+          iterate(childs[i].childs);
+        }
+      }
+    }
+    iterate($scope.data.childs);
+    $timeout(function(){
+      $scope.put(ID, $scope.data);
+    }, 100);
+  }
+  $scope.edit = function(){
+    var iterate = function(childs) {
+      for (var i in childs) {
+        delete(childs[i].add);
+        delete(childs[i].edit);
+        if (childs[i] && childs[i].childs) {
+          iterate(childs[i].childs);
+        }
+      }
+    }
+    iterate($scope.data.childs);
+    $timeout(function(){
+      $scope.put(ID, $scope.data);
+    }, 100);
+  }
+}
+</script>
+</head>
+<body ng-controller="ctrl" style="margin:10px;">
+
+  <div class="well">
+            <h2>Kelola Tarif Jasa PNBP Karantina</h2>
+    <button class="btn" ng-hide="button" ng-click="button=true">Tampilkan tombol</button>
+    <button class="btn" ng-show="button" ng-click="button=false">Sembunyikan tombol</button>
+  </div>
+  <div class="well well-top" ng-repeat="d in data.childs">
+    <!--BEGIN OF LEVEL-->
+    <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+    <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+    <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+    <span ng-hide="d.edit">{{d.name}}</span> 
+    <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+    <div class="child-btn" ng-show="button">
+      <!--button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button-->
+      <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+      <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+      <span ng-show="d.add || d.edit">
+        <span ng-show="d.add">---&gt;</span>
+        <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+        <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+        <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+        <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+        <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+        <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+        <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+        <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+        <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+      </span>
+    </div>
+    <div ng-show="d.expand">
+      <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+        <!--NEW LEVEL-->
+          <!--BEGIN OF LEVEL-->
+          <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+          <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+          <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+          <span ng-hide="d.edit">{{d.name}}</span> 
+          <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+          <div class="child-btn" ng-show="button">
+            <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+            <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+            <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+            <span ng-show="d.add || d.edit">
+              <span ng-show="d.add">---&gt;</span>
+              <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+              <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+              <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+              <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+              <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+              <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+              <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+              <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+              <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+            </span>
+          </div>
+          <div ng-show="d.expand">
+            <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+              <!--NEW LEVEL-->
+                <!--BEGIN OF LEVEL-->
+                <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+                <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+                <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+                <span ng-hide="d.edit">{{d.name}}</span> 
+                <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+                <div class="child-btn" ng-show="button">
+                  <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+                  <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+                  <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+                  <span ng-show="d.add || d.edit">
+                    <span ng-show="d.add">---&gt;</span>
+                    <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+                    <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+                    <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+                    <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+                    <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+                    <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+                    <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+                    <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+                    <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+                  </span>
+                </div>
+                <div ng-show="d.expand">
+                  <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+                    <!--NEW LEVEL-->
+                      <!--BEGIN OF LEVEL-->
+                      <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+                      <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+                      <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+                      <span ng-hide="d.edit">{{d.name}}</span> 
+                      <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+                      <div class="child-btn" ng-show="button">
+                        <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+                        <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+                        <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+                        <span ng-show="d.add || d.edit">
+                          <span ng-show="d.add">---&gt;</span>
+                          <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+                          <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+                          <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+                          <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+                          <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+                          <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+                          <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+                          <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+                          <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+                        </span>
+                      </div>
+                      <div ng-show="d.expand">
+                        <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+                          <!--NEW LEVEL-->
+                            <!--BEGIN OF LEVEL-->
+                            <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+                            <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+                            <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+                            <span ng-hide="d.edit">{{d.name}}</span> 
+                            <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+                            <div class="child-btn" ng-show="button">
+                              <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+                              <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+                              <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+                              <span ng-show="d.add || d.edit">
+                                <span ng-show="d.add">---&gt;</span>
+                                <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+                                <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+                                <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+                                <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+                                <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+                                <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+                                <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+                                <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+                                <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+                              </span>
+                            </div>
+                            <div ng-show="d.expand">
+                              <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+                                <!--NEW LEVEL-->
+                                  <!--BEGIN OF LEVEL-->
+                                  <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+                                  <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+                                  <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+                                  <span ng-hide="d.edit">{{d.name}}</span> 
+                                  <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+                                  <div class="child-btn" ng-show="button">
+                                    <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+                                    <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+                                    <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+                                    <span ng-show="d.add || d.edit">
+                                      <span ng-show="d.add">---&gt;</span>
+                                      <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+                                      <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+                                      <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+                                      <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+                                      <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+                                      <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+                                      <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+                                      <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+                                      <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+                                    </span>
+                                  </div>
+                                  <div ng-show="d.expand">
+                                    <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+                                      <!--NEW LEVEL-->
+                                      <!--BEGIN OF LEVEL-->
+                                      <button class="expand-btn btn" ng-click="d.expand=true" ng-show="!d.expand && d.childs.length > 0">+</button>
+                                      <button class="expand-btn btn" ng-click="d.expand=false" ng-show="d.expand && d.childs.length > 0">-</button>
+                                      <button class="expand-btn btn" ng-show="!d.childs || d.childs.length==0"></button>
+                                      <span ng-hide="d.edit">{{d.name}}</span> 
+                                      <span ng-show="d.price" class="price pull-right">{{d.price}} / {{d.sizeType}}</span>
+                                      <div class="child-btn" ng-show="button">
+                                        <button class="btn btn-small btn-danger" ng-click="removeSelf(d)" ng-hide="d.edit || d.add">-</button>
+                                        <button class="btn btn-small btn-success" ng-click="d.edit=true;" ng-hide="d.edit || d.add">Sunting</button>
+                                        <button class="btn btn-small btn-success" ng-click="d.add=true;new={}" ng-hide="d.edit || d.add">+ Turunan</button>
+                                        <span ng-show="d.add || d.edit">
+                                          <span ng-show="d.add">---&gt;</span>
+                                          <input ng-show="d.add" ng-model="new.name"placeholder="Nama turunan">
+                                          <input ng-show="d.add" ng-model="new.sizeType" style="width:50px" placeholder="Satuan">
+                                          <input ng-show="d.add" ng-model="new.price" style="width:100px" placeholder="Tarif">
+                                          <button ng-show="d.add" class="btn btn-small btn-success" ng-click="addChild(d,new)">Simpan</button>
+                                          <input ng-show="d.edit" ng-model="d.name"placeholder="Nama">
+                                          <input ng-show="d.edit" ng-model="d.sizeType" style="width:50px" placeholder="Satuan">
+                                          <input ng-show="d.edit" ng-model="d.price" style="width:100px" placeholder="Tarif">
+                                          <button ng-show="d.edit" class="btn btn-small btn-success" ng-click="d.edit=false;edit()">Simpan perubahan</button>
+                                          <button class="btn btn-small" ng-click="d.add=false;d.edit=false;">Batal</button>
+                                        </span>
+                                      </div>
+                                      <div ng-show="d.expand">
+                                        <div class="well well-child" ng-repeat="d in d.childs" ng-show="d.name">
+                                          <!--NEW LEVEL-->
+                                        </div>
+                                      </div>
+                                      <!--END OF LEVEL-->
+                                    </div>
+                                  </div>
+                                  <!--END OF LEVEL-->
+                              </div>
+                            </div>
+                            <!--END OF LEVEL-->
+                        </div>
+                      </div>
+                      <!--END OF LEVEL-->
+                  </div>
+                </div>
+                <!--END OF LEVEL-->
+            </div>
+          </div>
+          <!--END OF LEVEL-->
+      </div>
+    </div>
+    <!--END OF LEVEL-->
+  </div>
+  <div>Made with &#9829; from Bogor</div>
+</body>
+</html>

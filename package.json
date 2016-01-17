@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "server":"./node_modules/.bin/http-server -p 7654 && node index.js",
+    "server":"node index.js & ./node_modules/.bin/http-server -p 7654",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "herpiko dwi aguno <herpiko@gmail.com>",
